@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src="screenshots/hero.jpg" width="100%" alt="Bharat Nagar platform 1 at golden hour" />
+<img src="screenshots/hero-ui.jpg" width="100%" alt="Rail Darshan running in the browser — Rajdhani Express at Bharat Nagar" />
 
 # Rail Darshan
 
