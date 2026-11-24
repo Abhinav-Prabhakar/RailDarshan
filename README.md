@@ -9,7 +9,7 @@
 [![Three.js](https://img.shields.io/badge/three.js-r187-black?style=flat-square&logo=three.js&logoColor=white)](https://threejs.org)
 [![WebGL2](https://img.shields.io/badge/WebGL-2.0-3b6ea5?style=flat-square)](#)
 [![Vite](https://img.shields.io/badge/vite-8-646cff?style=flat-square&logo=vite&logoColor=white)](https://vite.dev)
-[![FPS](https://img.shields.io/badge/60-fps-2ea043?style=flat-square)](#performance)
+[![FPS](https://img.shields.io/badge/60-fps-2ea043?style=flat-square)](#numbers)
 [![License](https://img.shields.io/badge/license-MIT-c9a24a?style=flat-square)](LICENSE)
 
 [**Live site**](https://abhinav-prabhakar.github.io/RailDarshan/) · [Run it](#run-it) · [Numbers](#numbers) · [Controls](#controls)
