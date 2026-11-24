@@ -1,0 +1,25 @@
+{
+  "name": "rail-darshan",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite --port 5173 --host",
+    "build": "vite build",
+    "preview": "vite preview --port 4173",
+    "build:pages": "vite build --outDir docs --emptyOutDir"
+  },
+  "dependencies": {
+    "three": "^0.187.0"
+  },
+  "devDependencies": {
+    "vite": "^8.3.8"
+  },
+  "description": "A real-time, photoreal study of Indian Railways \u2014 Three.js, Vite, WebGL2.",
+  "homepage": "https://abhinav-prabhakar.github.io/RailDarshan/",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Abhinav-Prabhakar/RailDarshan.git"
+  },
+  "license": "MIT"
+}
