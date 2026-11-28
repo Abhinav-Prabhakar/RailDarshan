@@ -84,7 +84,9 @@ export function interiorGlowTexture() {
 
 function bodySkin(b, mats, cfg, { len, halfW, bottom, top, roofMat }) {
   const livery = cfg.livery;
-  const bodyMat = mats.painted(col(livery.body), { roughness: 0.55, metalness: 0.03, clearcoat: 0.06, clearcoatRoughness: 0.5, seed: 11, variation: 0.45 });
+  // Service-worn livery: dust up the skirt, soot under the roof, seams and
+  // rain streaks baked into one map that spans the coach side.
+  const bodyMat = mats.weathered(col(livery.body), { roughness: 0.58, metalness: 0.03, seed: 11 });
   const skinH = top - bottom;
   const skinY = (top + bottom) / 2;
   const inset = cfg.type === 'aero' ? 3.9 : 0.02;

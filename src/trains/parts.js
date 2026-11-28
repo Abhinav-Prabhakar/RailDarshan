@@ -32,8 +32,8 @@ export function wheelGeometry(radius = 0.46, width = 0.14) {
 export function buildWheelset(b, mats, {
   x = 0, y = 0.46, z = 0, r = 0.46, width = 0.14, halfGauge = 0.84, wheelMat = null, axleMat = null,
 } = {}) {
-  const wm = wheelMat || mats.metal(0x3b3a38, 0.42, 0.8);
-  const am = axleMat || mats.metal(0x4b4b48, 0.5, 0.8);
+  const wm = wheelMat || mats.metal(0x3a352f, 0.62, 0.5);
+  const am = axleMat || mats.metal(0x4a453e, 0.62, 0.55);
   const wg = wheelGeometry(r, width);
   for (const s of [-1, 1]) {
     b.add(wg, wm, { pos: [x + s * halfGauge, y, z], castShadow: true, receiveShadow: true });
@@ -44,7 +44,7 @@ export function buildWheelset(b, mats, {
   b.cyl(0.055, 0.055, halfGauge * 2 + 0.1, am, { pos: [x, y, z], rot: [0, 0, Math.PI / 2], seg: 10 });
   // brake discs
   for (const s of [-1, 1]) {
-    b.cyl(r * 0.58, r * 0.58, 0.035, mats.metal(0x5b5550, 0.42, 0.7), {
+    b.cyl(r * 0.58, r * 0.58, 0.035, mats.metal(0x554d44, 0.58, 0.55), {
       pos: [x + s * 0.43, y, z], rot: [0, 0, Math.PI / 2], seg: 18,
     });
   }

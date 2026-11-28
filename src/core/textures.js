@@ -117,6 +117,7 @@ export class TextureLibrary {
     this.paintCache = new Map();
     this.decalCache = new Map();
     this.textCache = new Map();
+    this.weatherCache = new Map();
     this.ready = false;
   }
 
@@ -175,6 +176,118 @@ export class TextureLibrary {
     const key = `grime-${seed}`;
     if (!this.decalCache.has(key)) this.decalCache.set(key, this.makeGrime(seed));
     return this.decalCache.get(key);
+  }
+
+  /*
+   * A grimy livery for rolling stock. One 1024x256 map spans an entire coach
+   * side, so the muck is painted where it actually lands — brake dust thrown
+   * up the skirt, soot under the roof line, rain runnels, panel seams and
+   * platform scuffs — instead of being tiled into an obvious repeat. The base
+   * paint stays readable; this is a service-worn train, not a wreck.
+   */
+  weathering(color, seed = 7) {
+    const hex = new THREE.Color(color).getHexString();
+    const key = `weather|${hex}|${seed}`;
+    if (this.weatherCache.has(key)) return this.weatherCache.get(key);
+    const W = 1024, H = 256;
+    const c = makeCanvas(W, H);
+    const ctx = c.getContext('2d');
+    const rng = mulberry32(seed * 97 + 13);
+    ctx.fillStyle = `#${hex}`;
+    ctx.fillRect(0, 0, W, H);
+
+    // broad, low-contrast mottling: paint never stays flat in service
+    for (let i = 0; i < 420; i++) {
+      drawSoftEllipse(ctx, rng() * W, rng() * H, rr(rng, 8, 70), rr(rng, 3, 26),
+        rng() > 0.5 ? '#ffffff' : '#171310', rr(rng, 0.006, 0.03));
+    }
+
+    // brake dust and platform grit thrown up the lower flank. The map also
+    // covers the skirt that the lower livery band hides on coaches, so the
+    // stain is carried higher than the visible bottom edge — otherwise the
+    // band would mask all of it.
+    const dust = ctx.createLinearGradient(0, H * 0.44, 0, H);
+    dust.addColorStop(0, 'rgba(104,92,75,0)');
+    dust.addColorStop(0.55, 'rgba(104,92,75,0.12)');
+    dust.addColorStop(1, 'rgba(92,80,65,0.5)');
+    ctx.fillStyle = dust;
+    ctx.fillRect(0, H * 0.44, W, H * 0.56);
+    // dirt caught along the very bottom edge
+    const skirt = ctx.createLinearGradient(0, H - 16, 0, H);
+    skirt.addColorStop(0, 'rgba(64,56,45,0)');
+    skirt.addColorStop(1, 'rgba(64,56,45,0.30)');
+    ctx.fillStyle = skirt;
+    ctx.fillRect(0, H - 16, W, 16);
+    for (let i = 0; i < 190; i++) {
+      drawSoftEllipse(ctx, rng() * W, H - rr(rng, 0, 52), rr(rng, 10, 64), rr(rng, 2, 11),
+        rng() > 0.42 ? '#6d6152' : '#3d352b', rr(rng, 0.02, 0.09));
+    }
+    // coarse spray kicked up from the bogies, reaching above the skirt band
+    for (let i = 0; i < 46; i++) {
+      const x = rng() * W;
+      const len = rr(rng, 26, 120);
+      const g = ctx.createLinearGradient(0, H, 0, H - len);
+      g.addColorStop(0, `rgba(78,68,55,${rr(rng, 0.06, 0.16).toFixed(3)})`);
+      g.addColorStop(1, 'rgba(78,68,55,0)');
+      ctx.save();
+      ctx.translate(x, H);
+      ctx.fillStyle = g;
+      ctx.fillRect(-rr(rng, 0.6, 2.6), -len, rr(rng, 1.2, 5.2), len);
+      ctx.restore();
+    }
+
+    // soot shadow under the roof, then rain runnels running down from it
+    const soot = ctx.createLinearGradient(0, 0, 0, H * 0.18);
+    soot.addColorStop(0, 'rgba(38,34,28,0.26)');
+    soot.addColorStop(1, 'rgba(38,34,28,0)');
+    ctx.fillStyle = soot;
+    ctx.fillRect(0, 0, W, H * 0.18);
+    for (let i = 0; i < 140; i++) {
+      const x = rng() * W;
+      const len = rr(rng, 18, 150);
+      const g = ctx.createLinearGradient(0, 0, 0, len);
+      g.addColorStop(0, `rgba(52,43,33,${rr(rng, 0.05, 0.14).toFixed(3)})`);
+      g.addColorStop(1, 'rgba(52,43,33,0)');
+      ctx.save();
+      ctx.translate(x, rr(rng, 0, 10));
+      ctx.fillStyle = g;
+      ctx.fillRect(-rr(rng, 0.4, 1.8), 0, rr(rng, 0.8, 3.2), len);
+      ctx.restore();
+    }
+
+    // panel seams: a dark joint with a worn highlight on one side
+    for (let x = 128; x < W; x += 128) {
+      ctx.fillStyle = 'rgba(18,15,12,0.22)';
+      ctx.fillRect(x, 0, 2, H);
+      ctx.fillStyle = 'rgba(255,255,255,0.06)';
+      ctx.fillRect(x + 2, 0, 1, H);
+    }
+    ctx.fillStyle = 'rgba(20,17,13,0.10)';
+    ctx.fillRect(0, H * 0.24, W, 1);
+
+    // scuffs, chips and a few bright rub marks along the bottom
+    for (let i = 0; i < 220; i++) {
+      const x = rng() * W, y = rng() * H;
+      const nearBottom = y > H * 0.55;
+      ctx.strokeStyle = nearBottom
+        ? `rgba(${rng() > 0.45 ? '196,184,162' : '44,37,29'},${rr(rng, 0.03, 0.13).toFixed(3)})`
+        : `rgba(40,34,27,${rr(rng, 0.02, 0.07).toFixed(3)})`;
+      ctx.lineWidth = rr(rng, 0.4, 1.3);
+      ctx.beginPath();
+      ctx.moveTo(x, y);
+      ctx.lineTo(x + rr(rng, -22, 22), y + rr(rng, -2, 2));
+      ctx.stroke();
+    }
+
+    // fine grime speckle, concentrated where the train meets the platform
+    for (let i = 0; i < 1200; i++) {
+      ctx.fillStyle = `rgba(38,31,23,${rr(rng, 0.02, 0.09).toFixed(3)})`;
+      ctx.fillRect(rng() * W, rr(rng, H * 0.3, H), rr(rng, 0.5, 1.8), rr(rng, 0.5, 2.4));
+    }
+
+    const t = canvasTexture(c, { wrap: THREE.ClampToEdgeWrapping, anisotropy: this.maxAniso });
+    this.weatherCache.set(key, t);
+    return t;
   }
 
   makeTactile() {

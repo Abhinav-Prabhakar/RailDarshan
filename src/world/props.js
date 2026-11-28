@@ -717,12 +717,12 @@ export function buildProps(scene, mats, tex) {
     const x = 13.9, z = -72.2;
     const darkWood = mats.wood([1, 1], 0x4a3220);
     const enamel = mats.painted(0x24463b, { roughness: 0.52, metalness: 0.14, seed: 21, variation: 0.6 });
-    const cream = mats.painted(0xd8cdb0, { roughness: 0.62, seed: 4 });
+    const cream = mats.painted(0xc6b99c, { roughness: 0.66, seed: 4 });
     const rustRed = mats.painted(0x8c3a30, { roughness: 0.78, seed: 5 });
 
     // counter carcass: framed enamel front, wore timber end, kick plate
     b.box(1.6, 0.92, 2.8, darkWood, { pos: [x, P + 0.46, z] });
-    b.box(1.75, 0.06, 2.95, mats.metal(0x9a9e9a, 0.5, 0.7), { pos: [x, P + 0.95, z] });
+    b.box(1.75, 0.06, 2.95, mats.metal(0x878c88, 0.58, 0.55), { pos: [x, P + 0.95, z] });
     b.box(0.03, 0.66, 2.5, enamel, { pos: [x - 0.8, P + 0.49, z], castShadow: false });
     b.box(0.035, 0.09, 2.56, cream, { pos: [x - 0.805, P + 0.8, z], castShadow: false });
     b.box(0.035, 0.05, 2.56, cream, { pos: [x - 0.805, P + 0.3, z], castShadow: false });
@@ -744,7 +744,7 @@ export function buildProps(scene, mats, tex) {
       const pz = z - 1.18 + i * 0.21;
       const px = x - 0.45 + (i % 2) * 0.3;
       b.box(0.09, 0.17, 0.19, mats.painted(pick(mulberry32(500 + i), packetCols), { seed: i }), {
-        pos: [px, P + 1.11 + (i % 3) * 0.01, pz], rot: [0, 0.06 * (i % 3), 0.02],
+        pos: [px, P + 1.065 + (i % 3) * 0.01, pz], rot: [0, 0.06 * (i % 3), 0.02],
       });
     }
 
@@ -837,6 +837,81 @@ export function buildProps(scene, mats, tex) {
       const bz = z + 1.22 + Math.floor(i / 4) * 0.1;
       b.cyl(0.032, 0.034, 0.23, mats.glass(bottleCols[i % 4], 0.24, 0.12), { pos: [bx, P + 0.88, bz], seg: 8, castShadow: false });
       b.cyl(0.012, 0.012, 0.06, mats.glass(bottleCols[i % 4], 0.24, 0.12), { pos: [bx, P + 1.02, bz], seg: 6, castShadow: false });
+    }
+
+    // A working top, not a display plinth: cloth runner, tray of samosas,
+    // kettle, cups, plates and loose packets spread along the whole counter.
+    const runner = mats.painted(0x6e3a30, { roughness: 0.96, seed: 31 });
+    const runnerTrim = mats.painted(0xc3aa80, { roughness: 0.94, seed: 32 });
+    b.box(1.0, 0.006, 2.5, runner, { pos: [x - 0.06, P + 0.984, z - 0.02], castShadow: false });
+    for (const dx of [-0.5, 0.5]) {
+      b.box(0.026, 0.007, 2.5, runnerTrim, { pos: [x - 0.06 + dx, P + 0.986, z - 0.02], castShadow: false });
+    }
+    const tray = mats.metal(0x8d918d, 0.52, 0.62);
+    b.box(0.62, 0.045, 0.74, tray, { pos: [x + 0.14, P + 1.0, z - 0.56], radius: 0.012 });
+    b.box(0.56, 0.012, 0.68, mats.painted(0xd8cdb0, { roughness: 0.9, seed: 6 }), { pos: [x + 0.14, P + 1.026, z - 0.56], castShadow: false });
+    const samosa = mats.painted(0xb47432, { roughness: 0.72, seed: 33 });
+    const srng = mulberry32(771);
+    for (let i = 0; i < 6; i++) {
+      b.sphere(0.062, samosa, {
+        pos: [x + 0.14 + (i % 2 ? 0.12 : -0.12), P + 1.078, z - 0.8 + Math.floor(i / 2) * 0.19],
+        scale: [1, 0.66, 0.86], rot: [0, rr(srng, -0.5, 0.5), 0], seg: 7, castShadow: false,
+      });
+    }
+    const kettle = mats.metal(0x9a9d97, 0.38, 0.75);
+    const kx = x + 0.42, kz = z + 0.8;
+    b.cyl(0.115, 0.125, 0.22, kettle, { pos: [kx, P + 1.11, kz], seg: 14 });
+    b.cyl(0.09, 0.1, 0.03, kettle, { pos: [kx, P + 1.235, kz], seg: 12 });
+    b.sphere(0.022, mats.blackMetal, { pos: [kx, P + 1.265, kz], seg: 6, castShadow: false });
+    b.tube([[kx, P + 1.16, kz + 0.1], [kx, P + 1.24, kz + 0.2], [kx, P + 1.31, kz + 0.21]], 0.022, kettle, { tubularSegments: 6, radialSegments: 6, castShadow: false });
+    b.tube([[kx, P + 1.2, kz - 0.1], [kx, P + 1.29, kz - 0.13], [kx, P + 1.22, kz - 0.06]], 0.016, kettle, { tubularSegments: 5, radialSegments: 5, castShadow: false });
+    const cupMat = mats.painted(0xe3d7bd, { roughness: 0.82, seed: 34 });
+    for (let i = 0; i < 5; i++) {
+      b.cyl(0.045, 0.036, 0.022, cupMat, { pos: [x + 0.32, P + 0.995 + i * 0.023, z + 0.62], seg: 12, castShadow: false });
+    }
+    for (let i = 0; i < 4; i++) {
+      b.cyl(0.115, 0.115, 0.012, cupMat, { pos: [x + 0.52, P + 0.992 + i * 0.013, z + 1.1], seg: 14, castShadow: false });
+    }
+    const looseCols = [0xc9a23f, 0xa8423a, 0x33708c, 0xd9c9a0, 0x6b7f3a];
+    for (let i = 0; i < 5; i++) {
+      b.box(0.11, 0.2, 0.16, mats.painted(looseCols[i], { roughness: 0.78, seed: 40 + i }), {
+        pos: [x - 0.02, P + 1.08, z + 0.62 + i * 0.075],
+        rot: [0, rr(srng, -0.3, 0.3), rr(srng, -0.16, 0.16)], castShadow: false,
+      });
+    }
+
+    // chalk price board hanging off the awning frame
+    const mc = makeCanvas(700, 380);
+    const mx = mc.getContext('2d');
+    const mg = mx.createLinearGradient(0, 0, 0, 380);
+    mg.addColorStop(0, '#1a2a22');
+    mg.addColorStop(1, '#0e1813');
+    mx.fillStyle = mg; mx.fillRect(0, 0, 700, 380);
+    mx.strokeStyle = 'rgba(213,199,164,0.55)'; mx.lineWidth = 5; mx.strokeRect(14, 14, 672, 352);
+    mx.fillStyle = '#efe2c2';
+    mx.font = '800 58px "Manrope", sans-serif';
+    mx.fillText('MENU', 42, 84);
+    mx.font = '500 30px "Noto Sans Devanagari", sans-serif';
+    mx.fillStyle = '#c9b98e';
+    mx.fillText('मेन्यू', 236, 82);
+    mx.strokeStyle = 'rgba(213,199,164,0.3)'; mx.lineWidth = 2;
+    mx.beginPath(); mx.moveTo(42, 108); mx.lineTo(658, 108); mx.stroke();
+    mx.font = '500 40px "Manrope", sans-serif';
+    const menuRows = [['CHAI', '₹10'], ['SAMOSA', '₹15'], ['NAMKEEN', '₹20']];
+    menuRows.forEach(([name, price], i) => {
+      mx.fillStyle = '#e7dcc0';
+      mx.fillText(name, 48, 172 + i * 62);
+      mx.fillStyle = '#d9b98a';
+      mx.fillText(price, 530, 172 + i * 62);
+    });
+    const menuTex = canvasTexture(mc, { anisotropy: 4 });
+    const menu = boardMesh(menuTex, 0.82, 0.445, { glow: 0.22 });
+    menu.position.set(x, P + 1.38, z - 1.49);
+    menu.rotation.y = Math.PI;
+    scene.add(menu);
+    b.box(0.86, 0.485, 0.03, mats.wood([1, 1], 0x3d2a1b), { pos: [x, P + 1.38, z - 1.464], castShadow: false });
+    for (const dx of [-0.33, 0.33]) {
+      b.cyl(0.008, 0.008, 0.56, mats.blackMetal, { pos: [x + dx, P + 1.86, z - 1.48], seg: 4, castShadow: false });
     }
   }
   {

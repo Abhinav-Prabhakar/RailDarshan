@@ -110,6 +110,9 @@ export function buildWap7(tex, mats, cfg, { windowMat, variant = 'wap7' } = {}) 
   const topY = floorY + h;
   const eave = topY - 0.44;
   const bodyMat = paint(mats, cfg.body || '#e8dfc9');
+  // Weathered side skins only: the fibreglass nose stays cleaner and the dirt
+  // gradient would wrap oddly over the swept nose UVs.
+  const sideMat = mats.weathered(col(cfg.body || '#e8dfc9'), { roughness: 0.52, metalness: 0.05, seed: 23 });
   const roofMat = paint(mats, cfg.roof || '#85898b', { roughness: 0.6, metalness: 0.34, variation: 1.2, seed: 14 });
   const darkMat = mats.painted(0x1c1d1b, { roughness: 0.7, metalness: 0.4, seed: 4 });
   const bandMat = paint(mats, cfg.band || '#7e1b1c', { roughness: 0.3, clearcoat: 0.85, side: THREE.DoubleSide });
@@ -163,7 +166,7 @@ export function buildWap7(tex, mats, cfg, { windowMat, variant = 'wap7' } = {}) 
   }
   // cream side skins over the straight centre section
   for (const s of [-1, 1]) {
-    b.add(new THREE.PlaneGeometry(bodyLen - 0.04, eave - floorY - 0.05), bodyMat, {
+    b.add(new THREE.PlaneGeometry(bodyLen - 0.04, eave - floorY - 0.05), sideMat, {
       pos: [s * (halfW + 0.002), (eave + floorY + 0.05) / 2, 0],
       rot: [0, s > 0 ? Math.PI / 2 : -Math.PI / 2, 0],
     });
@@ -370,6 +373,7 @@ export function buildWdm3a(tex, mats, cfg, { windowMat } = {}) {
   const topY = floorY + h;
   const eave = topY - 0.38;
   const bodyMat = paint(mats, cfg.body || '#b34329', { roughness: 0.34 });
+  const sideMat = mats.weathered(col(cfg.body || '#b34329'), { roughness: 0.5, metalness: 0.05, seed: 27 });
   const roofMat = paint(mats, cfg.roof || '#b9b3a5', { roughness: 0.72, metalness: 0.2, seed: 16 });
   const bandMat = paint(mats, cfg.band || '#e3c06a', { roughness: 0.32, clearcoat: 0.8 });
   const creamMat = paint(mats, cfg.accent || '#f3e6c4', { roughness: 0.34 });
@@ -380,7 +384,7 @@ export function buildWdm3a(tex, mats, cfg, { windowMat } = {}) {
     rBottom: 0.16, rTop: 0.46, roofRise: 0.04, sections: 30, loopSegments: 22,
   }), roofMat, { castShadow: true, receiveShadow: true });
   for (const s of [-1, 1]) {
-    b.add(new THREE.PlaneGeometry(len - 0.3, eave - floorY - 0.05), bodyMat, {
+    b.add(new THREE.PlaneGeometry(len - 0.3, eave - floorY - 0.05), sideMat, {
       pos: [s * (halfW + 0.002), (eave + floorY + 0.05) / 2, 0],
       rot: [0, s > 0 ? Math.PI / 2 : -Math.PI / 2, 0],
     });

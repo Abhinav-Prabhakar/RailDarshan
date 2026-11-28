@@ -64,6 +64,9 @@ const loaderBar = document.querySelector('.loader-bar i');
 const loaderStatus = document.querySelector('.loader-status');
 const tex = new TextureLibrary(renderer);
 const post = new PostFX(renderer, window.innerWidth, window.innerHeight, 'high');
+// GTAO costs a full second geometry pass, so it is opt-in: ?ao=1 for stills
+// and the cinematic preset, off for the interactive default.
+if (params.get('ao') === '1') post.setAO(true);
 const audio = new Soundscape();
 const cameraMove = new CameraTransition(camera, controls);
 

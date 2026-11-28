@@ -140,7 +140,7 @@ function makePlatformTiles() {
   rx.fillStyle = '#dadada'; rx.fillRect(0, 0, S, S);
   for (const slabs of rows) {
     for (const s of slabs) {
-      const v = Math.round(rr(rng, 88, 142));
+      const v = Math.round(rr(rng, 120, 160));
       const wear = rr(rng, 0, 1);
       drawSlab(s, (x, y, w, h) => {
         const ix = x + JOINT / 2, iy = y + JOINT / 2, iw = w - JOINT, ih = h - JOINT;
@@ -621,6 +621,72 @@ function makePuddleMask() {
   return t;
 }
 
+// Painted ceiling lining for the canopy. Warm cream panels with grimy joints,
+// soot bloom along the ridge edge and a few water stains, so the underside of
+// the roof stops reading as one flat sheet of light. Used as both the albedo
+// and the emissive map: the joints stay dark instead of glowing.
+function makeRoofLiner() {
+  const S = 512;
+  const c = makeCanvas(S, S);
+  const ctx = c.getContext('2d');
+  const rng = mulberry32(512);
+  const soft = (x, y, rx, ry, color, alpha) => {
+    ctx.save();
+    ctx.globalAlpha = alpha;
+    ctx.fillStyle = color;
+    ctx.beginPath(); ctx.ellipse(x, y, rx, ry, rng() * TAU, 0, TAU); ctx.fill();
+    ctx.restore();
+  };
+  // joint metal behind the panels
+  ctx.fillStyle = '#4c4436';
+  ctx.fillRect(0, 0, S, S);
+  const gap = 4.6;
+  for (let py = 0; py < 4; py++) {
+    for (let px = 0; px < 4; px++) {
+      const v = Math.round(rr(rng, -9, 7));
+      ctx.fillStyle = `rgb(${197 + v},${188 + v},${167 + v})`;
+      ctx.fillRect(px * 128 + gap, py * 128 + gap, 128 - gap * 2, 128 - gap * 2);
+      // roller / brush texture across the panel
+      for (let i = 0; i < 90; i++) {
+        ctx.fillStyle = `rgba(${rng() > 0.5 ? '255,248,231' : '79,69,52'},${rr(rng, 0.008, 0.038).toFixed(3)})`;
+        ctx.fillRect(px * 128 + gap + rng() * (128 - gap * 2), py * 128 + gap + rng() * (128 - gap * 2),
+          rr(rng, 2, 16), rr(rng, 1, 5));
+      }
+      // grime gathering in the panel corners
+      for (let i = 0; i < 8; i++) {
+        const ex = px * 128 + (rng() > 0.5 ? gap + 6 : 122 - gap - 6);
+        const ey = py * 128 + (rng() > 0.5 ? gap + 6 : 122 - gap - 6);
+        soft(ex, ey, rr(rng, 4, 16), rr(rng, 4, 14), '#4d412f', rr(rng, 0.02, 0.06));
+      }
+    }
+  }
+  // soot bloom along the ridge edge and rust weeping from the joints
+  const soot = ctx.createLinearGradient(0, 0, 0, 34);
+  soot.addColorStop(0, 'rgba(38,32,23,0.20)');
+  soot.addColorStop(1, 'rgba(38,32,23,0)');
+  ctx.fillStyle = soot;
+  ctx.fillRect(0, 0, S, 34);
+  for (let i = 0; i < 26; i++) {
+    const x = rng() * S;
+    const len = rr(rng, 18, 90);
+    const g = ctx.createLinearGradient(0, 0, 0, len);
+    g.addColorStop(0, `rgba(92,64,38,${rr(rng, 0.03, 0.09).toFixed(3)})`);
+    g.addColorStop(1, 'rgba(92,64,38,0)');
+    ctx.save();
+    ctx.translate(x, rr(rng, 2, 18));
+    ctx.fillStyle = g;
+    ctx.fillRect(-rr(rng, 0.4, 1.4), 0, rr(rng, 0.8, 2.4), len);
+    ctx.restore();
+  }
+  // water stains, broad and very faint
+  for (let i = 0; i < 10; i++) {
+    soft(rng() * S, rng() * S, rr(rng, 18, 70), rr(rng, 10, 40), '#6f5a3c', rr(rng, 0.015, 0.04));
+  }
+  const t = canvasTexture(c, { srgb: true });
+  t.wrapS = t.wrapT = THREE.ClampToEdgeWrapping;
+  return t;
+}
+
 // -------------------------------------------------------------------- station
 export function buildStation(scene, mats, tex) {
   const root = new THREE.Group();
@@ -658,8 +724,8 @@ export function buildStation(scene, mats, tex) {
 
   const tileMat = new THREE.MeshStandardMaterial({
     map: tiles.map, roughnessMap: tiles.rough, bumpMap: tiles.bump, bumpScale: 0.014,
-    color: 0xf7eee2, roughness: 0.62, metalness: 0.04,
-    envMapIntensity: 0.9,
+    color: 0xf7eee2, roughness: 0.85, metalness: 0.03,
+    envMapIntensity: 0.6,
   });
   moodRefs.tileMat = tileMat;
 
@@ -1096,9 +1162,10 @@ export function buildStation(scene, mats, tex) {
     // Pale insulated lining seen from the platform. Keep it a warm mid-grey:
     // when it gets too bright the whole ceiling blows out and reads as sky,
     // which was the single biggest reason the platform looked unfinished.
+    const linerMap = makeRoofLiner();
     const roofLiner = new THREE.MeshStandardMaterial({
-      color: 0xc9bfa9, roughness: 0.94, metalness: 0.02,
-      emissive: 0xd6c7a9, emissiveIntensity: 0.62, side: THREE.DoubleSide,
+      map: linerMap, color: 0xffffff, roughness: 0.95, metalness: 0.02,
+      emissive: 0xd6c7a9, emissiveMap: linerMap, emissiveIntensity: 0.4, side: THREE.DoubleSide,
     });
     const colMat = mats.painted(0x405449, { roughness: 0.56, metalness: 0.28, seed: 28, variation: 1.2 });
     const beamMat = mats.painted(0x8c938d, { roughness: 0.52, metalness: 0.42, seed: 18, variation: 1.1 });
@@ -1181,10 +1248,11 @@ export function buildStation(scene, mats, tex) {
       }
     }
 
-    // continuous purlins and eave beams
-    for (const t of [0.15, 0.3, 0.5, 0.7, 0.85]) {
+    // continuous purlins: enough lines overhead to give the liner scale and
+    // to catch the lamps, without turning the roof into a ladder
+    for (const t of [0.07, 0.19, 0.31, 0.42, 0.56, 0.68, 0.8, 0.93]) {
       const xx = xLeft + (xRight - xLeft) * t;
-      b.box(0.08, 0.1, zEnd - zStart, beamMat, { pos: [xx, roofAt(t) - 0.2, (zStart + zEnd) / 2], castShadow: false });
+      b.box(0.1, 0.12, zEnd - zStart, beamMat, { pos: [xx, roofAt(t) - 0.2, (zStart + zEnd) / 2], castShadow: false });
     }
     for (const x of [xLeft, xRight]) {
       b.box(0.24, 0.26, zEnd - zStart, beamMat, { pos: [x, eaveY, (zStart + zEnd) / 2] });

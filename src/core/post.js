@@ -19,6 +19,7 @@ const GradeShader = {
     uSaturation: { value: 1.02 },
     uLift: { value: new THREE.Color(0.012, 0.015, 0.022) },
     uFade: { value: 0.0 },
+    uAA: { value: 1.0 },
   },
   vertexShader: /* glsl */`
     varying vec2 vUv;
@@ -31,7 +32,7 @@ const GradeShader = {
     precision highp float;
     varying vec2 vUv;
     uniform sampler2D tDiffuse;
-    uniform float uTime, uVignette, uGrain, uAberration, uWarm, uContrast, uSaturation, uFade;
+    uniform float uTime, uVignette, uGrain, uAberration, uWarm, uContrast, uSaturation, uFade, uAA;
     uniform vec2 uResolution;
     uniform vec3 uLift;
 
@@ -41,12 +42,39 @@ const GradeShader = {
       return fract(p.x * p.y);
     }
 
+    float luma(vec3 c) { return dot(c, vec3(0.299, 0.587, 0.114)); }
+
+    // Compact FXAA: five taps plus a directional blend. The default preset
+    // renders without MSAA (a 2x half-float resolve costs ~5 ms here), so this
+    // takes its place for the price of one full-screen shader.
+    vec3 fxaa(sampler2D tex, vec2 uv, vec2 inv) {
+      vec3 nw = texture2D(tex, uv + vec2(-1.0, -1.0) * inv).rgb;
+      vec3 ne = texture2D(tex, uv + vec2( 1.0, -1.0) * inv).rgb;
+      vec3 sw = texture2D(tex, uv + vec2(-1.0,  1.0) * inv).rgb;
+      vec3 se = texture2D(tex, uv + vec2( 1.0,  1.0) * inv).rgb;
+      vec3 m  = texture2D(tex, uv).rgb;
+      float lm = luma(m);
+      float lMin = min(lm, min(min(luma(nw), luma(ne)), min(luma(sw), luma(se))));
+      float lMax = max(lm, max(max(luma(nw), luma(ne)), max(luma(sw), luma(se))));
+      vec2 dir = vec2(
+        -((luma(nw) + luma(ne)) - (luma(sw) + luma(se))),
+         ((luma(nw) + luma(sw)) - (luma(ne) + luma(se)))
+      );
+      float reduce = max((luma(nw) + luma(ne) + luma(sw) + luma(se)) * 0.03125, 0.0078125);
+      float rcp = 1.0 / (min(abs(dir.x), abs(dir.y)) + reduce);
+      dir = clamp(dir * rcp, vec2(-8.0), vec2(8.0)) * inv;
+      vec3 a = 0.5 * (texture2D(tex, uv + dir * (1.0 / 3.0 - 0.5)).rgb +
+                      texture2D(tex, uv + dir * (2.0 / 3.0 - 0.5)).rgb);
+      vec3 b = a * 0.5 + 0.25 * (texture2D(tex, uv + dir * -0.5).rgb +
+                                 texture2D(tex, uv + dir *  0.5).rgb);
+      float lb = luma(b);
+      return (lb < lMin || lb > lMax) ? a : b;
+    }
+
     void main() {
       vec2 uv = vUv;
       vec2 d = uv - 0.5;
-      // Single fetch. Chromatic aberration on a 60 fps real-time scene is a
-      // luxury we cannot afford; the grade does the job without it.
-      vec3 col = texture2D(tDiffuse, uv).rgb;
+      vec3 col = uAA > 0.5 ? fxaa(tDiffuse, uv, 1.0 / uResolution) : texture2D(tDiffuse, uv).rgb;
       float r2 = dot(d, d);
       col *= 1.0 - r2 * 0.012;
 
@@ -87,7 +115,7 @@ export class PostFX {
 
     const rt = new THREE.WebGLRenderTarget(width, height, {
       type: THREE.HalfFloatType,
-      samples: quality === 'cinematic' ? 4 : 2,
+      samples: quality === 'cinematic' ? 4 : 0,
       stencilBuffer: false,
     });
     this.composer = new EffectComposer(renderer, rt);
@@ -100,13 +128,13 @@ export class PostFX {
       const bootCamera = new THREE.PerspectiveCamera(50, 1, 0.1, 100);
       this.gtao = new GTAOPass(null, bootCamera, width, height);
       this.gtao.output = GTAOPass.OUTPUT.Default;
-      this.gtao.blendIntensity = 0.82;
+      this.gtao.blendIntensity = 0.86;
       this.gtao.updateGtaoMaterial({
-        radius: 0.28,
+        radius: 0.9,
         distanceExponent: 1.2,
-        thickness: 0.6,
+        thickness: 0.8,
         scale: 1.0,
-        samples: 8,
+        samples: 12,
         distanceFallOff: 1.0,
         screenSpaceRadius: false,
       });
@@ -128,10 +156,17 @@ export class PostFX {
     this.composer.addPass(this.output);
 
     this.grade = new ShaderPass(GradeShader);
+    this.grade.uniforms.uAA.value = quality === 'cinematic' ? 0 : 1;
     this.composer.addPass(this.grade);
     this.grade.uniforms.uResolution.value.set(width, height);
 
     this.setAOScale();
+    // The AO prepass runs at half resolution; apply that size now so the
+    // first frames do not pay for a full-resolution depth/normal target.
+    if (this.gtao) {
+      const pr = renderer.getPixelRatio();
+      this.gtao.setSize(Math.round(width * pr * this.aoScale), Math.round(height * pr * this.aoScale));
+    }
   }
 
   setScene(scene, camera) {

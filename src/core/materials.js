@@ -79,6 +79,24 @@ export class Materials {
     return this.painted(color, { roughness: 0.68, metalness: 0.45, clearcoat: 0.1, seed: 13, variation: 1.2 });
   }
 
+  // Side skins for rolling stock: the livery colour with a painted-in service
+  // history (skirt dust, roof soot, rain runnels, panel seams). Returns a
+  // mapped material, so it skips the palette collapse — one extra draw call
+  // per livery instead of one per coach.
+  weathered(color, { roughness = 0.58, metalness = 0.05, seed = 11 } = {}) {
+    const hex = new THREE.Color(color).getHexString();
+    const key = `weather|${hex}|${roughness}|${metalness}|${seed}`;
+    if (this.cache.has(key)) return this.cache.get(key);
+    const m = new THREE.MeshStandardMaterial({
+      map: this.tex.weathering(color, seed),
+      roughness,
+      metalness,
+      envMapIntensity: 0.34,
+    });
+    this.cache.set(key, m);
+    return m;
+  }
+
   metal(color = 0x8f9198, roughness = 0.32, metalness = 0.9) {
     const key = `metal|${color}|${roughness}|${metalness}`;
     if (this.cache.has(key)) return this.cache.get(key);

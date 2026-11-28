@@ -47,22 +47,22 @@ A real-time portrait of an Indian railway station: **15 trains**, **14 coach int
 
 ## Under the hood
 
-- **One material, many props.** Static geometry is merged into a handful of vertex-coloured batches — the whole station draws in ~430 calls, not 3,800.
+- **One material, many props.** Static geometry is merged into a handful of vertex-coloured batches — the whole station draws in ~460 calls, not 3,800.
 - **Eleven lights, not fifty.** Three warm practicals per bay, emissive bulbs and baked floor pools replace a forest of point lights; one 2048² shadow map stops updating after the third frame.
 - **Textures are painted, not fetched.** Stone slabs, tactile paving, jute, soot, signage and posters are drawn to canvas at boot; HDRIs do the lighting.
-- **Post that pays for itself.** Half-resolution bloom, a single-fetch grade, adaptive resolution, GTAO reserved for *cinematic*.
+- **Post that pays for itself.** Half-resolution bloom, FXAA folded into the single-fetch grade, adaptive resolution, and GTAO as an opt-in cinematic pass (`?ao=1`).
 
 ## Numbers
 
 | Metric | Value |
 | --- | --- |
-| Draw calls | **~430** |
+| Draw calls | **~460** |
 | Triangles | **2.5 M** |
-| Textures | **127** |
+| Textures | **133** |
 | Lights | **11** |
 | Shadow map | 2048², frozen after frame 3 |
 | Payload | ~45 MB of HDRIs + PBR |
-| Frame budget | 16.7 ms — the scene renders in ~3 |
+| Frame budget | 16.7 ms — 60 fps at 1.35× pixel ratio; geometry pass ~3 ms |
 
 ## Run it
 
